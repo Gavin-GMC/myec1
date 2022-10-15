@@ -225,7 +225,7 @@ namespace myEC {
 		{
 			if (*xnew < *swarm)
 				return true;
-			else return rand01() < pow(2.71828, -1 * abs(xnew->fitness[0] - swarm->fitness[0]) / temperature);
+			else return rand01() < pow(E_CONST, -1 * abs(xnew->fitness[0] - swarm->fitness[0]) / temperature);
 		}
 
 		double (*cooling)(int t0, int k);

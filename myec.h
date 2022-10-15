@@ -12,7 +12,7 @@
 #include"gp.h"
 
 namespace myEC {
-	static const enum class algorithm { PSO, CSO, LLSO, GA, NSGA2, AS, ACS, EDA, SPSO, DE, TabuSearch, SA };
+	static const enum class algorithm { PSO, CSO, LLSO, GA, NSGA2, AS, ACS, EDA, SPSO, DE, TabuSearch, SA, BPSO, SBPSO, CLPSO, S_CLPSO};
 
 	class OptimizerBuilder
 	{
@@ -73,9 +73,14 @@ namespace myEC {
 				constrainRangeList[i * 2] = EMPTYVALUE;
 			}
 
-			if (type == algorithm::PSO)
+			if (type == algorithm::PSO || type == algorithm::BPSO)
 			{
 				algorithm_parameter[0] = algorithm_parameter[1] = 2;
+			}
+			else if (type == algorithm::CLPSO)
+			{
+				algorithm_parameter[0] = 2;
+				algorithm_parameter[1] = 5;
 			}
 			else if (type == algorithm::GA || type == algorithm::NSGA2)
 			{
@@ -93,6 +98,7 @@ namespace myEC {
 				algorithm_parameter[1] = 2;
 				algorithm_parameter[2] = 0.5;
 				algorithm_parameter[3] = -1;
+				algorithm_parameter[4] = EMPTYVALUE;
 				algorithm_parameter[5] = 0;
 				algorithm_parameter[6] = 1;
 			}
@@ -102,8 +108,9 @@ namespace myEC {
 				algorithm_parameter[1] = 2;
 				algorithm_parameter[2] = 0.1;
 				algorithm_parameter[3] = -1;
-				algorithm_parameter[5] = 0;
-				algorithm_parameter[6] = 1;
+				algorithm_parameter[4] = EMPTYVALUE;//choice number
+				algorithm_parameter[5] = 0;//is_direct
+				algorithm_parameter[6] = 1;//is_related
 				algorithm_parameter[7] = 0.9;
 			}
 			else if (type == algorithm::LLSO)
@@ -122,12 +129,23 @@ namespace myEC {
 			}
 			else if (type == algorithm::SPSO)
 			{
-				algorithm_parameter[0] = 0.5;
-				algorithm_parameter[1] = 0.5;
-				algorithm_parameter[3] = 0;
-				algorithm_parameter[4] = 0;
-				algorithm_parameter[5] = 0;
-				algorithm_parameter[6] = 1;
+				algorithm_parameter[0] = 2;
+				algorithm_parameter[1] = 2;
+				algorithm_parameter[2] = 0;
+				algorithm_parameter[3] = 1;
+				algorithm_parameter[4] = EMPTYVALUE;
+				algorithm_parameter[5] = 1;
+				algorithm_parameter[6] = 6;
+			}
+			else if (type == algorithm::S_CLPSO)
+			{
+				algorithm_parameter[0] = 2;
+				algorithm_parameter[1] = 5;
+				algorithm_parameter[2] = 0;
+				algorithm_parameter[3] = 1;
+				algorithm_parameter[4] = EMPTYVALUE;
+				algorithm_parameter[5] = 1;
+				algorithm_parameter[6] = 6;
 			}
 			else if (type == algorithm::CSO)
 			{
@@ -152,7 +170,11 @@ namespace myEC {
 				algorithm_parameter[3] = problemsize;
 				this->search_func = nullptr;
 			}
-
+			else if (type == algorithm::SBPSO)
+			{
+				algorithm_parameter[0] = algorithm_parameter[1] = EMPTYVALUE;
+				algorithm_parameter[2] = 2;
+			}
 		}
 
 		~OptimizerBuilder() {
@@ -245,6 +267,30 @@ namespace myEC {
 			algorithm_parameter[1] = c2;
 		}
 
+		void setBPSOparameter(double c1 = 2, double c2 = 2)
+		{
+			if (type != algorithm::BPSO)
+			{
+				std::cerr << "wrong setting of parameter c\n";
+				return;
+			}
+			algorithm_parameter[0] = c1;
+			algorithm_parameter[1] = c2;
+		}
+
+		//ustkS & is both EMPTYVALUE for adaptive setting, ustkS: 8/iteration  is:4/problem_size, alpha: 2
+		void setSBPSOparameter(int ustkS = EMPTYVALUE, double is=EMPTYVALUE, double alpha = 2)
+		{
+			if (type != algorithm::SBPSO)
+			{
+				std::cerr << "wrong setting of parameter c\n";
+				return;
+			}
+			algorithm_parameter[0] = ustkS;
+			algorithm_parameter[1] = is;
+			algorithm_parameter[2] = alpha;
+		}
+
 		//phi|swarmsize : 0|ss<100, 0-0.1|ss=200, 0.1-0.2|ss=400-600, 0.1-0.3|ss=1000
 		void setCSOparameter(double c1 = 2, double c2 = 2, double phi = 0)
 		{
@@ -321,9 +367,10 @@ namespace myEC {
 			algorithm_parameter[7] = p0;
 		}
 
-		void setACOProblemType(bool is_direct = false, bool is_related = true)
+		void setDiscreteProblemType(bool is_direct = false, bool is_related = true)
 		{
-			if (type != algorithm::AS && type != algorithm::ACS)
+			if (type != algorithm::AS && type != algorithm::ACS 
+				&& type != algorithm::SPSO && type != algorithm::S_CLPSO)
 			{
 				std::cerr << "wrong setting of algorithm type\n";
 				return;
@@ -344,6 +391,17 @@ namespace myEC {
 			algorithm_parameter[1] = c2;
 			algorithm_parameter[2] = levelnumber;
 			algorithm_parameter[3] = betterReplace;
+		}
+
+		void setCLPSOparameter(double c = 2, double m = 5)
+		{
+			if (type != algorithm::CLPSO)
+			{
+				std::cerr << "wrong setting of parameter c\n";
+				return;
+			}
+			algorithm_parameter[0] = c;
+			algorithm_parameter[1] = m;
 		}
 
 		void setEDASelection(EAOperator::selection selection_type = EAOperator::selection::roulette, bool elitist_strategy = false)
@@ -379,14 +437,21 @@ namespace myEC {
 			algorithm_parameter[0] = c1;
 			algorithm_parameter[1] = c2;
 
-			algorithm_parameter[5] = v_heuristic;
-			algorithm_parameter[6] = f_heuristic;
+			algorithm_parameter[2] = v_heuristic;
+			algorithm_parameter[3] = f_heuristic;
 		}
 
-		void setSPSOProblemType(bool is_direct = false, bool is_related = true)
+		void setS_CLPSOparameter(double c = 2, int m = 5, bool v_heuristic = false, bool f_heuristic = true)
 		{
-			algorithm_parameter[3] = is_direct;
-			algorithm_parameter[4] = is_related;
+			if (type != algorithm::S_CLPSO)
+			{
+				std::cerr << "wrong setting of parameter c\n";
+				return;
+			}
+			algorithm_parameter[0] = c;
+			algorithm_parameter[1] = m;
+			algorithm_parameter[2] = v_heuristic;
+			algorithm_parameter[3] = f_heuristic;
 		}
 
 		//f usually between 0-2, cr between 0.1-0.6, and EMPTYVALUE for adaptive setting
@@ -480,11 +545,26 @@ namespace myEC {
 						return nullptr;
 					}
 					else if (constrainRangeList[2 * i + 1] > algorithm_parameter[2])
-						algorithm_parameter[2] = constrainRangeList[2 * i + 1];
+						algorithm_parameter[4] = constrainRangeList[2 * i + 1];
 				}
 
 				back = new SPSO(problemsize, swarmsize, generation, evaluate_func, objectNum, compare_func, solution_ini_func, model_ini, constrain_check, model_change, repair_func, heuristic_func,
-					algorithm_parameter[0], algorithm_parameter[1], bool(algorithm_parameter[5]), bool(algorithm_parameter[6]), int(algorithm_parameter[2]), bool(algorithm_parameter[3]), bool(algorithm_parameter[4]), logType);
+					algorithm_parameter[0], algorithm_parameter[1], bool(algorithm_parameter[2]), bool(algorithm_parameter[3]), int(algorithm_parameter[4]), bool(algorithm_parameter[5]), bool(algorithm_parameter[6]), logType);
+			}
+			else if (type == algorithm::S_CLPSO) {
+				for (int i = 0; i < problemsize; i++)
+				{
+					if (constrainRangeList[2 * i] == EMPTYVALUE)
+					{
+						std::cerr << "failing optimizer build for not set choice range\n";
+						return nullptr;
+					}
+					else if (constrainRangeList[2 * i + 1] > algorithm_parameter[2])
+						algorithm_parameter[4] = constrainRangeList[2 * i + 1];
+				}
+
+				back = new S_CLPSO(problemsize, swarmsize, generation, evaluate_func, objectNum, compare_func, solution_ini_func, model_ini, constrain_check, model_change, repair_func, heuristic_func,
+					algorithm_parameter[0], algorithm_parameter[1], bool(algorithm_parameter[2]), bool(algorithm_parameter[3]), int(algorithm_parameter[4]), bool(algorithm_parameter[5]), bool(algorithm_parameter[6]), logType);
 			}
 			else if (type == algorithm::DE) {
 				back = new DE(problemsize, swarmsize, generation, evaluate_func, objectNum, compare_func, solution_ini_func, model_ini, constrain_check, model_change, repair_func, algorithm_parameter[0], algorithm_parameter[1], logType);
@@ -496,6 +576,17 @@ namespace myEC {
 				back = new SA(problemsize, generation, evaluate_func, objectNum, compare_func, solution_ini_func, model_ini, constrain_check, model_change, repair_func,
 					algorithm_parameter[0],SA::cooling_type(algorithm_parameter[1]),algorithm_parameter[2], search_func, algorithm_parameter[3], logType);
 			}
+			else if (type == algorithm::BPSO)
+			{
+				back = new BPSO(problemsize, swarmsize, generation, evaluate_func, objectNum, compare_func, solution_ini_func, model_ini, constrain_check, model_change, repair_func, algorithm_parameter[0], algorithm_parameter[1], logType);
+			}
+			else if (type == algorithm::SBPSO)
+			{
+				back = new SBPSO(problemsize, swarmsize, generation, evaluate_func, objectNum, compare_func, solution_ini_func, model_ini, constrain_check, model_change, repair_func, algorithm_parameter[0], algorithm_parameter[1], algorithm_parameter[2], logType);
+			}
+			else if (type == algorithm::CLPSO) {
+				back = new CLPSO(problemsize, swarmsize, generation, evaluate_func, objectNum, compare_func, solution_ini_func, model_ini, constrain_check, model_change, repair_func, algorithm_parameter[0], algorithm_parameter[1], logType);
+			}
 
 			else {
 				std::cerr << "failing optimizer build\n";
@@ -505,6 +596,5 @@ namespace myEC {
 			back->constructConstrainRangeList(constrainRangeList, 2 * problemsize);
 			return back;
 		}
-
 	};
 }

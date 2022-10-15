@@ -353,7 +353,7 @@ namespace myEC {
 		virtual void ini()
 		{
 			Solution greedy(problem_size, objectnum);
-			int state;
+			int state = -1;
 
 			if (model_ini != nullptr)
 				model_ini();
@@ -386,7 +386,7 @@ namespace myEC {
 						if (model_change != nullptr)
 							model_change(state, greedy.result[i]);
 					}
-					else
+					else if (model_change != nullptr)
 						model_change(counter, i);
 				}
 			}

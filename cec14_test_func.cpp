@@ -99,7 +99,7 @@ namespace CEC14 {
 			}
 
 			/* Load Matrix M*/
-			sprintf(FileName, "input_data14/M_%d_D%d.txt", func_num, nx);
+			sprintf(FileName, "data/input_data14/M_%d_D%d.txt", func_num, nx);
 			fpt = fopen(FileName, "r");
 			if (fpt == NULL)
 			{
@@ -128,7 +128,7 @@ namespace CEC14 {
 			fclose(fpt);
 
 			/* Load shift_data */
-			sprintf(FileName, "input_data14/shift_data_%d.txt", func_num);
+			sprintf(FileName, "data/input_data14/shift_data_%d.txt", func_num);
 			fpt = fopen(FileName, "r");
 			if (fpt == NULL)
 			{
@@ -171,7 +171,7 @@ namespace CEC14 {
 
 			if (func_num >= 17 && func_num <= 22)
 			{
-				sprintf(FileName, "input_data14/shuffle_data_%d_D%d.txt", func_num, nx);
+				sprintf(FileName, "data/input_data14/shuffle_data_%d_D%d.txt", func_num, nx);
 				fpt = fopen(FileName, "r");
 				if (fpt == NULL)
 				{
@@ -188,7 +188,7 @@ namespace CEC14 {
 			}
 			else if (func_num == 29 || func_num == 30)
 			{
-				sprintf(FileName, "input_data14/shuffle_data_%d_D%d.txt", func_num, nx);
+				sprintf(FileName, "data/input_data14/shuffle_data_%d_D%d.txt", func_num, nx);
 				fpt = fopen(FileName, "r");
 				if (fpt == NULL)
 				{

@@ -9,6 +9,12 @@ namespace myEC {
 	const int EMPTYVALUE = -2139062144;
 	const int MAX = 1e9;
 	const int SINGLEOBJECTBESTNUM = 1;
+	const double E_CONST = 2.718281828459045;
+
+	double sigmoid(double value)
+	{
+		return 1 / (1 + pow(E_CONST, value));
+	}
 
 	double rand01()
 	{
@@ -297,9 +303,9 @@ namespace myEC {
 				this->detailedLog = true;
 
 			if (detailedLog)
-				logFile.open("DLog_" + std::to_string(time(NULL)) + ".txt");
+				logFile.open("log/DLog_" + std::to_string(time(NULL)) + ".txt");
 			else if (roughLog)
-				logFile.open("RLog_" + std::to_string(time(NULL)) + ".txt");
+				logFile.open("log/RLog_" + std::to_string(time(NULL)) + ".txt");
 		}
 
 		~Optimizer()
