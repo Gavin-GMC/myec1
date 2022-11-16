@@ -11,7 +11,8 @@ namespace myEC {
 
 		Particle() {}
 
-		Particle(int size)
+		Particle(int size, int objectnumber = 1)
+			:Solution(size, objectnumber)
 		{
 			pbest = new Solution(size);
 			velocity = new double[size];

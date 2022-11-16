@@ -12,7 +12,7 @@
 #include"gp.h"
 
 namespace myEC {
-	static const enum class algorithm { PSO, CSO, LLSO, GA, NSGA2, AS, ACS, EDA, SPSO, DE, TabuSearch, SA, BPSO, SBPSO, CLPSO, S_CLPSO};
+	static const enum class algorithm { PSO, CSO, LLSO, GA, NSGA2, AS, ACS, EDA, SPSO, DE, TabuSearch, SA, BPSO, SBPSO, CLPSO, S_CLPSO, MOEAD};
 
 	class OptimizerBuilder
 	{
@@ -38,6 +38,11 @@ namespace myEC {
 		double (*heuristic_func)(int demensionId, double value);
 		void (*solution_ini_func)(double solution[], size_t size);
 		void (*search_func)(Solution* id, double* clist);
+
+		selectionParameter sp;
+		crossoverParameter cp;
+		mutationParameter mp;
+
 
 	public:
 		OptimizerBuilder(algorithm type, int size, void (*evaluate_func)(double solution[], double fitness[]),
@@ -84,13 +89,7 @@ namespace myEC {
 			}
 			else if (type == algorithm::GA || type == algorithm::NSGA2)
 			{
-				algorithm_parameter[0] = 0.9;
-				algorithm_parameter[1] = 0.01;
-				algorithm_parameter[2] = 0;
-				algorithm_parameter[3] = 0;
-				algorithm_parameter[4] = 1;
-				algorithm_parameter[5] = 0;
-				algorithm_parameter[6] = 0;
+				algorithm_parameter[0] = 0;
 			}
 			else if (type == algorithm::AS)
 			{
@@ -305,39 +304,41 @@ namespace myEC {
 		}
 
 		//pc usually between 0.4-0.99
-		void setGACorssover(double pc = 0.9, EAOperator::crossover crossover_type = EAOperator::crossover::singlepoint)
+		void setGACorssover(double pc = 0.9, EAOperator::crossover crossover_type = EAOperator::crossover::singlepoint, double extra_parameter = 1)
 		{
 			if (type != algorithm::GA && type != algorithm::NSGA2)
 			{
 				std::cerr << "wrong setting of crossover operation\n";
 				return;
 			}
-			algorithm_parameter[0] = pc;
-			algorithm_parameter[2] = double(crossover_type);
+			cp.pc = pc;
+			cp.type = crossover_type;
+			cp.additional_parameter = extra_parameter;
 		}
 
 		//pm usually between 0.001-0.1
-		void setGAMutation(int mutation_times = 1, double pm = 0.01, EAOperator::mutation mutation_type = EAOperator::mutation::bit)
+		void setGAMutation(double pm = 0.01, EAOperator::mutation mutation_type = EAOperator::mutation::bit, double extra_parameter = 1)
 		{
 			if (type != algorithm::GA && type != algorithm::NSGA2)
 			{
 				std::cerr << "wrong setting of mutation operation\n";
 				return;
 			}
-			algorithm_parameter[1] = pm;
-			algorithm_parameter[3] = double(mutation_type);
-			algorithm_parameter[4] = mutation_times;
+			mp.pm = pm;
+			mp.type = mutation_type;
+			mp.additional_parameter = extra_parameter;
 		}
 
-		void setGASelection(EAOperator::selection selection_type = EAOperator::selection::roulette, bool elitist_strategy = false)
+		void setGASelection(EAOperator::selection selection_type = EAOperator::selection::roulette, bool elitist_strategy = false, double extra_parameter = 1)
 		{
 			if (type != algorithm::GA && type != algorithm::NSGA2)
 			{
 				std::cerr << "wrong setting of selection operation\n";
 				return;
 			}
-			algorithm_parameter[5] = double(selection_type);
-			algorithm_parameter[6] = elitist_strategy;
+			algorithm_parameter[0] = elitist_strategy;
+			sp.type = selection_type;
+			sp.additional_parameter = extra_parameter;
 		}
 
 		void setASparameter(double alpha = 1, double belta = 2, double rho = 0.5, double t0 = -1)
@@ -478,6 +479,38 @@ namespace myEC {
 			this->search_func = search_func;
 		}
 
+		//pc usually between 0.4-0.99
+		void setMOEADCorssover(double pc = 0.9, EAOperator::crossover crossover_type = EAOperator::crossover::singlepoint, double extra_parameter = 1)
+		{
+			if (type != algorithm::MOEAD)
+			{
+				std::cerr << "wrong setting of crossover operation\n";
+				return;
+			}
+			cp.pc = pc;
+			cp.type = crossover_type;
+			cp.additional_parameter = extra_parameter;
+		}
+
+		//pm usually between 0.001-0.1
+		void setMOEADMutation(double pm = 0.01, EAOperator::mutation mutation_type = EAOperator::mutation::bit, double extra_parameter = 1)
+		{
+			if (type != algorithm::MOEAD)
+			{
+				std::cerr << "wrong setting of mutation operation\n";
+				return;
+			}
+			mp.pm = pm;
+			mp.type = mutation_type;
+			mp.additional_parameter = extra_parameter;
+		}
+
+		void setMOEADDecomponent(int neighborsize=10, MOEAD::D_approach decomponent_type = MOEAD::D_approach::tchebycheff)
+		{
+			algorithm_parameter[0] = int(decomponent_type);
+			algorithm_parameter[1] = neighborsize;
+		}
+
 		Optimizer* build()
 		{
 			Optimizer* back;
@@ -493,12 +526,10 @@ namespace myEC {
 					algorithm_parameter[2], algorithm_parameter[3], algorithm_parameter[0], algorithm_parameter[1], logType);
 			}
 			else if (type == algorithm::GA) {
-				back = new GA(problemsize, swarmsize, generation, evaluate_func, objectNum, compare_func, solution_ini_func, model_ini, constrain_check, model_change, repair_func, algorithm_parameter[0], algorithm_parameter[1],
-					EAOperator::crossover(algorithm_parameter[2]), EAOperator::mutation(algorithm_parameter[3]), algorithm_parameter[4], EAOperator::selection(algorithm_parameter[5]), algorithm_parameter[6], logType);
+				back = new GA(problemsize, swarmsize, generation, evaluate_func, objectNum, compare_func, solution_ini_func, model_ini, constrain_check, model_change, repair_func, cp, mp, sp, algorithm_parameter[0], logType);
 			}
 			else if (type == algorithm::NSGA2){
-				back = new NSGA2(problemsize, swarmsize, generation, evaluate_func, objectNum, compare_func, solution_ini_func, model_ini, constrain_check, model_change, repair_func, algorithm_parameter[0], algorithm_parameter[1],
-					EAOperator::crossover(algorithm_parameter[2]), EAOperator::mutation(algorithm_parameter[3]), algorithm_parameter[4], EAOperator::selection(algorithm_parameter[5]), logType);
+				back = new NSGA2(problemsize, swarmsize, generation, evaluate_func, objectNum, compare_func, solution_ini_func, model_ini, constrain_check, model_change, repair_func, cp, mp, sp, logType);
 			}
 			else if (type == algorithm::AS) {
 				for (int i = 0; i < problemsize; i++)
@@ -534,7 +565,7 @@ namespace myEC {
 			}
 			else if (type == algorithm::EDA){
 				back = new EDA(problemsize, swarmsize, generation, evaluate_func, objectNum, compare_func, solution_ini_func, model_ini, constrain_check, model_change, repair_func, EDA::pda(algorithm_parameter[0]), algorithm_parameter[1],
-					algorithm_parameter[2], EAOperator::selection(algorithm_parameter[3]), algorithm_parameter[4], logType);
+					algorithm_parameter[2], sp, algorithm_parameter[4], logType);
 			}
 			else if (type == algorithm::SPSO){
 				for (int i = 0; i < problemsize; i++)
@@ -586,6 +617,9 @@ namespace myEC {
 			}
 			else if (type == algorithm::CLPSO) {
 				back = new CLPSO(problemsize, swarmsize, generation, evaluate_func, objectNum, compare_func, solution_ini_func, model_ini, constrain_check, model_change, repair_func, algorithm_parameter[0], algorithm_parameter[1], logType);
+			}
+			else if (type == algorithm::MOEAD) {
+				back = new MOEAD(problemsize, swarmsize, generation, evaluate_func, objectNum, compare_func, solution_ini_func, model_ini, constrain_check, model_change, repair_func, cp, mp, MOEAD::D_approach(algorithm_parameter[0]), algorithm_parameter[1], logType);
 			}
 
 			else {

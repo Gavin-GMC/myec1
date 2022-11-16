@@ -157,7 +157,7 @@ namespace myEC {
 			void (*model_change)(int demensionId, double value),
 			double (*repair_func)(int demensionId, double value),
 			pda pda_type, int good_number, double alpha,
-			EAOperator::selection selection_type, bool elitist_strategy,
+			selectionParameter sp, bool elitist_strategy,
 			int logType)
 			:Optimizer(ps, ss, gen, evaluate_func, objectNumber, solution_ini_func, model_ini, constrain_check, model_change, repair_func, logType)
 		{
@@ -183,7 +183,7 @@ namespace myEC {
 
 			this->good_number = good_number;
 			this->alpha = alpha;
-			selection_func = Selection(selection_type);
+			selection_func = Selection(sp);
 			this->elitist_strategy = elitist_strategy;
 		}
 

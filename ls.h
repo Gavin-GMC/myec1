@@ -21,7 +21,8 @@ namespace myEC {
 
 		static void default_search(Solution* id, double* clist)
 		{
-			EAOperator::bit_mutation(id, 1, clist);
+			int mid = rand() % id->size;
+			EAOperator::bit_mutation(id, clist[2 * mid + 1], clist[2 * mid], mid, 0);
 		}
 
 		bool tabuCheck(Solution* s)
@@ -218,7 +219,8 @@ namespace myEC {
 
 		static void default_search(Solution* id, double* clist)
 		{
-			EAOperator::bit_mutation(id, 1, clist);
+			int mid = rand() % id->size;
+			EAOperator::bit_mutation(id, clist[2 * mid + 1], clist[2 * mid], mid, 0);
 		}
 
 		double accept()

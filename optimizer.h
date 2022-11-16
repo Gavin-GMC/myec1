@@ -4,94 +4,19 @@
 #include<algorithm>
 #include<fstream>
 #include<iostream>
+#include"basicfunc.h"
 
 namespace myEC {
-	const int EMPTYVALUE = -2139062144;
-	const int MAX = 1e9;
-	const int SINGLEOBJECTBESTNUM = 1;
-	const double E_CONST = 2.718281828459045;
-
-	double sigmoid(double value)
-	{
-		return 1 / (1 + pow(E_CONST, value));
-	}
-
-	double rand01()
-	{
-		return double(rand()) / RAND_MAX;
-	}
-
-	double Eu_distance(double a[], double b[], size_t size = 2)
-	{
-		double back = 0;
-		for (int i = 0; i < size; i++)
-		{
-			back += pow(a[i] - b[i], 2);
-		}
-
-		return sqrt(back);
-	}
-
-	template<class T>
-	void sort(T* left, T* right)
-	{
-		T* p_buffer = (T*)malloc(sizeof(T));
-		size_t ssize = right - left;
-
-		//insert sort
-		for (int i = 0; i < ssize; i++)
-		{
-			for (int j = 0; j < i; j++)
-			{
-				//insert individual
-				if (left[i] < left[j])
-				{
-					*p_buffer = left[i];
-					for (int j1 = i; j1 > j; j1--)
-						left[j1] = left[j1 - 1];
-					left[j] = *p_buffer;
-					break;
-				}
-			}
-		}
-
-		free(p_buffer);
-	}
-
-	struct sortHelper {
-		int id;
-		double value;
-
-		sortHelper() {}
-
-		sortHelper(int id, double value)
-		{
-			this->id = id;
-			this->value = value;
-		}
-
-		bool operator<(const sortHelper& a)const
-		{
-			return value < a.value;
-		}
-
-		bool operator>(const sortHelper& a)const
-		{
-			return value > a.value;
-		}
-
-	};
-
 	class Solution
 	{
 	protected:
 		bool (*compare_func)(double f1[], double f2[], size_t size) = nullptr;
 	public:
 
-		int size = -1;
+		int size = 0;
 		double* result;
 		double* fitness;
-		int object_number = -1;
+		int object_number = 0;
 
 		Solution() {}
 
@@ -248,7 +173,7 @@ namespace myEC {
 		bool default_constrain(int demensionId, double value) const
 		{
 			return constrainRangeList[2 * demensionId] == EMPTYVALUE ||
-				(constrainRangeList[2 * demensionId] <= value && value <= constrainRangeList[2 * demensionId]);
+				(constrainRangeList[2 * demensionId] <= value && value <= constrainRangeList[2 * demensionId + 1]);
 		}
 
 		bool constrain_check(int demensionId, double value)

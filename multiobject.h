@@ -13,12 +13,12 @@ namespace myEC {
 		return atan((e1 - e2) / (f1 - f2));
 	}
 
-	//can it set as a private static parameter of MO? 
-	sortHelper* MOsortbuffer;
-	int MObuffersize;
-
 	class MO
 	{
+	private:
+		static sortHelper* MOsortbuffer;
+		static int MObuffersize;
+
 	public:
 		template <class T>
 		static void fastNonDominatedSort(T swarm[], size_t ss, double* rank_back)
@@ -75,7 +75,7 @@ namespace myEC {
 		template <class T = Solution>
 		static void CrowdDistance(T swarm[], size_t ss, double* distance_back)
 		{
-			if (MObuffersize != ss)
+			if (MObuffersize < ss)
 			{
 				delete[] MOsortbuffer;
 				MOsortbuffer = new sortHelper[ss];
@@ -106,7 +106,7 @@ namespace myEC {
 		template <class T = Solution>
 		static void normalizeCrowdDistance(T swarm[], size_t ss, double* distance_back)
 		{
-			if (MObuffersize != ss)
+			if (MObuffersize < ss)
 			{
 				delete[] MOsortbuffer;
 				MOsortbuffer = new sortHelper[ss];
@@ -135,9 +135,9 @@ namespace myEC {
 		}
 
 		template <class T = Solution>
-		static void referenceDRank(T swarm[], size_t ss, double*referencePoint, int objective_number, int rank_number, double* rank_back)
+		static void referenceDRank(T swarm[], size_t ss, double* referencePoint, int objective_number, int rank_number, double* rank_back)
 		{
-			if (MObuffersize != ss)
+			if (MObuffersize < ss)
 			{
 				delete[] MOsortbuffer;
 				MOsortbuffer = new sortHelper[ss];
@@ -161,11 +161,11 @@ namespace myEC {
 			}
 		}
 
-		//only for bi-objective optimization
+		//only for bi-objective optimization, return the rate of slope changing around solutions, which have been normalized
 		template <class T = Solution>
 		static void CrowdAngle(T swarm[], size_t ss, double* angle_back)
 		{
-			if (MObuffersize != ss)
+			if (MObuffersize < ss)
 			{
 				delete[] MOsortbuffer;
 				MOsortbuffer = new sortHelper[ss];
@@ -203,7 +203,7 @@ namespace myEC {
 			for (int i = 1; i < length - 1; i++)
 			{
 				angle_back[MOsortbuffer[i].id] = -1 * abs(
-					getSlope(swarm[MOsortbuffer[i - 1]].fitness[0] / f1range, swarm[MOsortbuffer[i - 1]].fitness[1] / f2range,
+					getSlope(swarm[MOsortbuffer[i - 1].id].fitness[0] / f1range, swarm[MOsortbuffer[i - 1].id].fitness[1] / f2range,
 						swarm[MOsortbuffer[i].id].fitness[0] / f1range, swarm[MOsortbuffer[i].id].fitness[1] / f2range)
 					- getSlope(swarm[MOsortbuffer[i].id].fitness[0] / f1range, swarm[MOsortbuffer[i].id].fitness[1] / f2range,
 						swarm[MOsortbuffer[i + 1].id].fitness[0] / f1range, swarm[MOsortbuffer[i + 1].id].fitness[1] / f2range));
@@ -250,7 +250,45 @@ namespace myEC {
 							indicator[k * ss + j] = indi_buffer;
 						}
 						break;
-					}	
+					}
+				}
+			}
+
+			free(t_buffer);
+		}
+
+		template <class T>
+		static void buildPartialOrder(T swarm[], size_t ss, double* indicator, int indicator_number, int main_indacator)
+		{
+			bool better;
+			double indi_buffer;
+			T* t_buffer = (T*)malloc(sizeof(T));
+
+			//insert sort
+			for (int i = 0; i < ss; i++)
+			{
+				for (int j = 0; j < i; j++)
+				{
+					//compare individual
+					better = (indicator[main_indacator * ss + i] < indicator[main_indacator * ss + j]);
+
+					//insert individual
+					if (better)
+					{
+						*t_buffer = swarm[i];
+						for (int j1 = i; j1 > j; j1--)
+							swarm[j1] = swarm[j1 - 1];
+						swarm[j] = *t_buffer;
+
+						for (int k = 0; k < indicator_number; k++)
+						{
+							indi_buffer = indicator[k * ss + i];
+							for (int j1 = i; j1 > j; j1--)
+								indicator[k * ss + j1] = indicator[k * ss + j1 - 1];
+							indicator[k * ss + j] = indi_buffer;
+						}
+						break;
+					}
 				}
 			}
 
@@ -259,17 +297,22 @@ namespace myEC {
 
 		static bool paretoFrontUpdate(Solution* candidate, Solution pf[], int& pf_size)
 		{
+			Solution* temp = (Solution*)malloc(sizeof(Solution));
 			for (int i = 0; i < pf_size; i++)
 			{
-				if (pf[i] < *candidate)
+				if (pf[i] < *candidate || pf[i] == *candidate)
 					return false;
 				if (*candidate < pf[i])
 				{
-					std::swap(pf[i], pf[pf_size - 1]);
+					*temp = std::move(pf[i]);
+					pf[i] = std::move(pf[pf_size - 1]);
+					pf[pf_size - 1] = std::move(*temp);
+
 					i--;
 					pf_size--;
 				}
 			}
+			free(temp);
 			if (pf_size == (PFSIZE - 1))
 				return false;
 
@@ -277,4 +320,7 @@ namespace myEC {
 			return true;
 		}
 	};
+
+	sortHelper* MO::MOsortbuffer = nullptr;
+	int MO::MObuffersize = 0;
 }

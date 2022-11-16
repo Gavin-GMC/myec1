@@ -2,28 +2,47 @@
 #include"optimizer.h"
 
 namespace myEC {
-	class Set_Particle: public Solution
+	class Set_Particle : public Solution
 	{
+	private:
+		static const double threshold;
+		int choicenumber;
+		
 	public:
 		Solution* pbest;
 		double* velocity;
-		int velocitySize;
+		int* velocityIndex;
+		int* velocityIndex_Size;
+		int velocityLength;
+
 
 		Set_Particle() {}
 
-		Set_Particle(int size)
+		Set_Particle(int size, int choicenum, int objectnum = 1, bool is_related = false)
+			:Solution(size, objectnum)
 		{
-			pbest = new Solution(size);
-			velocity = new double[size];
+			this->choicenumber = choicenum;
+			if (is_related)
+				velocityLength = choicenum;
+			else velocityLength = size;
+
+			pbest = new Solution(size, objectnum);
+			velocity = new double[velocityLength * choicenum];
+			velocityIndex = new int[velocityLength * choicenum];
+			velocityIndex_Size = new int[velocityLength];
+			for (int i = 0; i < velocityLength; i++)
+				velocityIndex_Size[i] = 0;
 		}
 
 		~Set_Particle()
 		{
 			delete pbest;
-			delete[]velocity;
+			delete[] velocity;
+			delete[] velocityIndex;
+			delete[] velocityIndex_Size;
 		}
 
-		void setSize(int _size, int velocitySize, double objectNumber = 1)
+		void setSize(int _size, int choicenum, double objectNumber = 1, bool is_related = false)
 		{
 			if (size != _size)
 			{
@@ -31,13 +50,38 @@ namespace myEC {
 				if (!result)
 					delete[] result;
 				result = new double[size];
+
+				if (!is_related)
+				{
+					velocityLength = size;
+					if (!velocity)
+						delete[] velocity;
+					velocity = new double[velocityLength * choicenum];
+					if (!velocityIndex)
+						delete[] velocityIndex;
+					velocityIndex = new int[velocityLength * choicenum];
+					if (!velocityIndex_Size)
+						delete[] velocityIndex_Size;
+					velocityIndex_Size = new int[velocityLength];
+
+				}
 			}
-			if (this->velocitySize != velocitySize)
+			if (this->choicenumber != choicenum)
 			{
-				this->velocitySize = velocitySize;
-				if (!velocity)
-					delete[] velocity;
-				velocity = new double[velocitySize];
+				this->choicenumber = choicenum;
+				if (is_related)
+				{
+					velocityLength = choicenum;
+					if (!velocity)
+						delete[] velocity;
+					velocity = new double[velocityLength * choicenum];
+					if (!velocityIndex)
+						delete[] velocityIndex;
+					velocityIndex = new int[velocityLength * choicenum];
+					if (!velocityIndex_Size)
+						delete[] velocityIndex_Size;
+					velocityIndex_Size = new int[velocityLength];
+				}
 			}
 			if (this->object_number != objectNumber)
 			{
@@ -50,7 +94,37 @@ namespace myEC {
 				delete pbest;
 			pbest = new Solution(size, object_number);
 		}
+
+		void addToVelocity(int demension, int choiceid, double rate)
+		{
+			if (demension >= velocityLength || rate <= velocity[demension * choicenumber + choiceid] || choiceid >= choicenumber)
+				return;
+			velocity[demension * choicenumber + choiceid] = rate;
+		}
+
+		void velocityIndexUpdate()
+		{
+			for (int i = 0; i < velocityLength; i++)
+			{
+				velocityIndex_Size[i] = 0;
+				for (int j = 0; j < choicenumber; j++)
+				{
+					if (velocity[i * choicenumber + j] > threshold)
+					{
+						velocityIndex[i * choicenumber + velocityIndex_Size[i]] = j;
+						velocityIndex_Size[i]++;
+					}
+				}
+			}
+		}
+
+		double getVelocityRate(int demension, int choice)
+		{
+			return velocity[demension * choicenumber + choice];
+		}
 	};
+	const double Set_Particle::threshold = 1e-3;
+
 
 	//Set-based Particle Swarm Optimization for discrete optimization
 	class SPSO :public Optimizer
@@ -60,7 +134,6 @@ namespace myEC {
 		bool is_related;
 		int pre_choice;
 		int choicenumber;
-		int v_size;
 
 		bool v_heuristic;
 		bool f_heuristic;
@@ -74,8 +147,10 @@ namespace myEC {
 		{
 			int to;
 			double va;
-			for (int i = 0; i < v_size; i++)
-				pswarm[id].velocity[i] = w * pswarm[id].velocity[i];
+			for (int i = 0; i < pswarm[id].velocityLength; i++)
+				for (int j = 0; j < pswarm[id].velocityIndex_Size[i]; j++)
+					pswarm[id].velocity[i * choicenumber + pswarm[id].velocityIndex[i * choicenumber + j]] *= w;
+
 			if (is_related)
 			{
 				int* example = new int[problem_size * 2];
@@ -104,8 +179,8 @@ namespace myEC {
 							example[2 * i] = EMPTYVALUE;
 							break;
 						}
-					}					
-				}			
+					}
+				}
 
 				for (int i = 0; i < problem_size; i++)
 				{
@@ -192,6 +267,8 @@ namespace myEC {
 					}
 				}
 			}
+
+			pswarm[id].velocityIndexUpdate();
 		}
 
 		virtual void positionUpdate(int id)
@@ -204,6 +281,7 @@ namespace myEC {
 			if (model_ini != nullptr)
 				model_ini();
 			int counter;
+			int choiceid;
 
 			if (is_related)
 			{
@@ -219,14 +297,15 @@ namespace myEC {
 				{
 					counter = 0;
 					//velocity crisp
-					for (int i = 0; i < choicenumber; i++)
+					for (int i = 0; i < pswarm[id].velocityIndex_Size[pre_choice]; i++)
 					{
-						if (rand01() < pswarm[id].velocity[pre_choice * choicenumber + i])
+						choiceid = pswarm[id].velocityIndex[pre_choice * choicenumber + i];
+						if (rand01() < pswarm[id].velocity[pre_choice * choicenumber + choiceid])
 						{
 							if (v_heuristic && heuristic_func != nullptr)
-								sortbuffer[counter++] = sortHelper(i, heuristic_func(pre_choice, i));
+								sortbuffer[counter++] = sortHelper(choiceid, heuristic_func(pre_choice, choiceid));
 							else
-								sortbuffer[counter++] = sortHelper(i, rand01());
+								sortbuffer[counter++] = sortHelper(choiceid, rand01());
 						}
 					}
 					std::sort(sortbuffer, sortbuffer + counter, std::greater<sortHelper>());
@@ -287,14 +366,15 @@ namespace myEC {
 				{
 					counter = 0;
 					//velocity crisp
-					for (int i = 0; i < choicenumber; i++)
+					for (int i = 0; i < pswarm[id].velocityIndex_Size[p]; i++)
 					{
-						if (rand01() < pswarm[id].velocity[p * choicenumber + i])
+						choiceid = pswarm[id].velocityIndex[p * choicenumber + i];
+						if (rand01() < pswarm[id].velocity[p * choicenumber + choiceid])
 						{
 							if (v_heuristic && heuristic_func != nullptr)
-								sortbuffer[counter++] = sortHelper(i, heuristic_func(p, i));
+								sortbuffer[counter++] = sortHelper(choiceid, heuristic_func(p, choiceid));
 							else
-								sortbuffer[counter++] = sortHelper(i, rand01());
+								sortbuffer[counter++] = sortHelper(choiceid, rand01());
 						}
 					}
 					std::sort(sortbuffer, sortbuffer + counter, std::greater<sortHelper>());
@@ -360,7 +440,7 @@ namespace myEC {
 				for (int i = 0; i < swarm_size; i++)
 				{
 					//velocity initial
-					memset(pswarm[i].velocity, 0, v_size * sizeof(double));
+					memset(pswarm[i].velocity, 0, choicenumber * choicenumber * sizeof(double));
 					for (int j = 0; j < choicenumber; j++)
 					{
 						to = rand() % choicenumber;
@@ -407,7 +487,7 @@ namespace myEC {
 			else {
 				for (int i = 0; i < swarm_size; i++)
 				{
-					memset(pswarm[i].velocity, 0, v_size * sizeof(double));
+					memset(pswarm[i].velocity, 0, problem_size * choicenumber * sizeof(double));
 					for (int j = 0; j < problem_size; j++)
 					{
 						pswarm[i].velocity[j * choicenumber + (rand() % choicenumber)] = 1;
@@ -415,13 +495,13 @@ namespace myEC {
 
 					if (solution_ini_func != nullptr)
 					{
-						solution_ini_func(pswarm[i].result, problem_size);	
+						solution_ini_func(pswarm[i].result, problem_size);
 					}
 					else {
 						if (model_ini != nullptr)
 							model_ini();
 						for (int j = 0; j < problem_size; j++)
-						{														
+						{
 							pswarm[i].result[j] = EMPTYVALUE;
 							valueBuffer = rand() % choicenumber;
 
@@ -492,6 +572,7 @@ namespace myEC {
 		{
 			this->c1 = c1;
 			this->c2 = c2;
+			this->objectnum = objectNumber;
 			swarm = new Set_Particle[swarm_size];
 			pswarm = (Set_Particle*)swarm;
 			gbest = new Solution(problem_size, objectNumber);
@@ -505,13 +586,10 @@ namespace myEC {
 			this->is_related = is_related;
 			sortbuffer = new sortHelper[choicenumber];
 
-			if (is_related)
-				v_size = choicenumber * choicenumber;
-			else v_size = problem_size * choicenumber;
-
 			for (int i = 0; i < swarm_size; i++)
 			{
-				pswarm[i].setSize(ps, v_size, objectNumber);
+				//pswarm[i].setSize(ps, v_size, objectNumber);
+				pswarm[i].setSize(ps, choicenumber, objectNumber, is_related);
 				pswarm[i].setCompareFunc(compare_func);
 				pswarm[i].pbest->setCompareFunc(compare_func);
 			}
@@ -522,7 +600,7 @@ namespace myEC {
 			pswarm = nullptr;
 			delete[] swarm;
 			delete[] sortbuffer;
-			delete gbest;
+			delete[] gbest;
 		}
 
 		void exe()
@@ -607,8 +685,9 @@ namespace myEC {
 		{
 			int to;
 			double va;
-			for (int i = 0; i < v_size; i++)
-				pswarm[id].velocity[i] = w * pswarm[id].velocity[i];
+			for (int i = 0; i < pswarm[id].velocityLength; i++)
+				for (int j = 0; j < pswarm[id].velocityIndex_Size[i]; j++)
+					pswarm[id].velocity[i * choicenumber + pswarm[id].velocityIndex[i * choicenumber + j]] *= w;
 
 			if (is_related)
 			{
@@ -626,7 +705,7 @@ namespace myEC {
 						example[2 * i] = pswarm[id].pbest->result[i - 1];
 						example[2 * i + 1] = pswarm[id].pbest->result[i];
 					}
-					
+
 				}
 				if (fi[id * problem_size])
 				{
@@ -637,7 +716,7 @@ namespace myEC {
 					example[0] = pswarm[id].pbest->result[problem_size - 1];
 					example[1] = pswarm[id].pbest->result[0];
 				}
-				
+
 				//difference set build
 				for (int i = 0; i < problem_size; i++)
 				{
@@ -681,9 +760,9 @@ namespace myEC {
 				{
 					if (fi[id * problem_size + i])
 						to = pswarm[fid[id]].pbest->result[i];
-					else 
+					else
 						to = pswarm[id].pbest->result[i];
-					
+
 					if (to != EMPTYVALUE && pswarm[id].result[i] != to)
 					{
 						va = c1 * r1;
@@ -692,6 +771,8 @@ namespace myEC {
 					}
 				}
 			}
+
+			pswarm[id].velocityIndexUpdate();
 		}
 
 		virtual void gbestUpdate(int generation)
@@ -755,4 +836,3 @@ namespace myEC {
 		}
 	};
 }
-

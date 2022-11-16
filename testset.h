@@ -28,6 +28,36 @@ namespace basicTest1
 	}
 }
 
+namespace basicTest2
+{
+	const int problemsize = 5;
+
+	void evaluate(double solution[], double fitness[])
+	{
+		fitness[0] = 0;
+		for (int i = 0; i < problemsize; i++)
+		{
+			fitness[0] += pow(solution[i], 2);
+		}
+		fitness[0] *= -1;
+	}
+
+	bool constrain(int demensionId, double value)
+	{
+		return value<10 && value>-10;
+	}
+
+	double repair(int demensionId, double value)
+	{
+		return rand() % 10 - 5;
+	}
+
+	bool compare(double f1[], double f2[], size_t size)
+	{
+		return f1[0] > f2[0];
+	}
+}
+
 //A popular benchmark of multidimensional knapsack problem
 namespace tspKroa100 {
 	const int CITYNUMBER = 100;
@@ -92,6 +122,9 @@ namespace tspKroa100 {
 
 	void change(int demensionId, double value)
 	{
+		if(value==100)
+			std::cerr << "!!!!";
+
 		if (value < 0 || visit[int(value)])
 			return;
 		//locate_city = value;
@@ -478,7 +511,13 @@ namespace CEC14{
 		return value<100 && value>-100;
 	}
 
-
+	//d for 2,10,20,30,50,100. func_num for 1-30
+	void setProblem(int d, int func_num)
+	{
+		ini_flag = 0;
+		n_flag = d;
+		func_flag = func_num;
+	}
 
 	void evaluate(double solution[], double fitness[])
 	{
@@ -489,29 +528,255 @@ namespace CEC14{
 	{
 		return rand() % 200 - 100;
 	}
+}
 
-	//d for 2,10,20,30,50,100. func_num for 1-30
-	/*void test(int d, int func_num)
+//A benchmark of bi-object optimization
+namespace ZDT
+{
+	//An instance of bi-object optimization
+	namespace ZDT1
 	{
-		ini_flag = 0;
-		n_flag = d;
-		func_flag = func_num;
+		int problemsize = 30;
 
-		myEC::OptimizerBuilder b(myEC::algorithm::PSO, d, evaluate, 100, d * 10000);
-		b.setConstrainFunc(constrain);
-		b.setRepaireFunc(repair);
-		for (int i = 0; i < d; i++)
-			b.setDemensionRange(i, -100, 100);
-		//b.setGASelection(GA::selection::championship);
-		b.setLogType(1);
+		double f1(double x[])
+		{
+			return x[0];
+		}
 
-		myEC::Optimizer* o = b.build();
-		o->exe();
+		double f2(double x[])
+		{
+			double gx = 0;
+			for (int i = 1; i < problemsize; i++)
+				gx += x[i];
+			gx = gx * 9 / (problemsize - 1) + 1;
+			return gx * (1 - sqrt(f1(x) / gx));
+		}
 
+		void evaluate(double solution[], double fitness[])
+		{
+			fitness[0] = f1(solution);
+			fitness[1] = f2(solution);
+		}
 
-		myEC::Solution* s = o->getGbest();
-		std::string ans = s->ansprint();
+		bool constrain(int demensionId, double value)
+		{
+			return value <= 1 && value >= 0;
+		}
 
-		std::cout << ans << std::endl;
-	}*/
+		double repair(int demensionId, double value)
+		{
+			if (value < 0)
+				return 0;
+			if (value > 1)
+				return 1;
+			return double(rand()) / RAND_MAX;
+		}
+	}
+
+	//An instance of bi-object optimization
+	namespace ZDT2
+	{
+		int problemsize = 30;
+
+		double f1(double x[])
+		{
+			return x[0];
+		}
+
+		double f2(double x[])
+		{
+			double gx = 0;
+			for (int i = 1; i < problemsize; i++)
+				gx += x[i];
+			gx = gx * 9 / (problemsize - 1) + 1;
+			return gx * (1 - pow((f1(x) / gx), 2));
+		}
+
+		void evaluate(double solution[], double fitness[])
+		{
+			fitness[0] = f1(solution);
+			fitness[1] = f2(solution);
+		}
+
+		bool constrain(int demensionId, double value)
+		{
+			return value <= 1 && value >= 0;
+		}
+
+		double repair(int demensionId, double value)
+		{
+			return double(rand()) / RAND_MAX;
+		}
+	}
+
+	//An instance of bi-object optimization
+	namespace ZDT3
+	{
+		int problemsize = 30;
+
+		double f1(double x[])
+		{
+			return x[0];
+		}
+
+		double f2(double x[])
+		{
+			double gx = 0;
+			for (int i = 1; i < problemsize; i++)
+				gx += x[i];
+			gx = gx * 9 / (problemsize - 1) + 1;
+			return gx * (1 - sqrt(f1(x) / gx) - (f1(x) / gx * sin(10 * 3.14159 * f1(x))));
+		}
+
+		void evaluate(double solution[], double fitness[])
+		{
+			fitness[0] = f1(solution);
+			fitness[1] = f2(solution);
+		}
+
+		bool constrain(int demensionId, double value)
+		{
+			return value <= 1 && value >= 0;
+		}
+
+		double repair(int demensionId, double value)
+		{
+			return double(rand()) / RAND_MAX;
+		}
+	}
+
+	//An instance of bi-object optimization
+	namespace ZDT4
+	{
+		int problemsize = 10;
+
+		double f1(double x[])
+		{
+			return x[0];
+		}
+
+		double f2(double x[])
+		{
+			double gx = 0;
+			for (int i = 1; i < problemsize; i++)
+				gx += (pow(x[i], 2) - 10 * cos(4 * 3.14159 * x[i]));
+			gx = gx + 1 + 10 * (problemsize - 1);
+			return gx * (1 - sqrt(f1(x) / gx));
+		}
+
+		void evaluate(double solution[], double fitness[])
+		{
+			fitness[0] = f1(solution);
+			fitness[1] = f2(solution);
+		}
+
+		bool constrain(int demensionId, double value)
+		{
+			if (demensionId == 0)
+				return value <= 1 && value >= 0;
+			return value <= 10 && value >= -10;
+		}
+
+		double repair(int demensionId, double value)
+		{
+			if (demensionId == 0)
+				return double(rand()) / RAND_MAX;
+			return double(rand()) / RAND_MAX * 20 - 10;
+		}
+	}
+
+	//An instance of bi-object bi-optimization
+	namespace ZDT5
+	{
+		int problemsize = 30 + 5 * 10;
+		int u[11];
+
+		int* decode(double x[])
+		{
+			int bu = 0;
+			int i;
+			for (i = 0; i < 30; i++)
+				if (int(x[i]) == 1)
+					bu++;
+			u[0] = bu;
+			for (int k = 1; k < 11; k++)
+			{
+				bu = 0;
+				if (int(x[i]) == 1)
+					bu++;
+				u[k] = bu;
+			}
+			return u;
+		}
+
+		double f1()
+		{
+			return u[0];
+		}
+
+		double f2()
+		{
+			double gx = 0;
+			for (int i = 1; i < 11; i++)
+				if (u[i] == 5)
+					gx += 1;
+				else gx += (2 + u[i]);
+			return gx * (1 / f1());
+		}
+
+		void evaluate(double solution[], double fitness[])
+		{
+			decode(solution);
+			fitness[0] = f1();
+			fitness[1] = f2();
+		}
+
+		bool constrain(int demensionId, double value)
+		{
+			return int(value) == 0 || int(value) == 1;
+		}
+
+		double repair(int demensionId, double value)
+		{
+			if (abs(value) < 0.5)
+				return 0;
+			return 1;
+		}
+	}
+
+	//An instance of bi-object optimization
+	namespace ZDT6
+	{
+		int problemsize = 10;
+
+		double f1(double x[])
+		{
+			return 1 - exp(-4 * x[0]) * pow(sin(6 * 3.14159 * x[0]), 6);
+		}
+
+		double f2(double x[])
+		{
+			double gx = 0;
+			for (int i = 1; i < problemsize; i++)
+				gx += x[i];
+			gx = 1 + 9 * pow(gx / 9, 0.25);
+			return gx * (1 - pow(f1(x) / gx, 2));
+		}
+
+		void evaluate(double solution[], double fitness[])
+		{
+			fitness[0] = f1(solution);
+			fitness[1] = f2(solution);
+		}
+
+		bool constrain(int demensionId, double value)
+		{
+			return value <= 1 && value >= 0;
+		}
+
+		double repair(int demensionId, double value)
+		{
+			return double(rand()) / RAND_MAX;
+		}
+	}
 }
