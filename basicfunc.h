@@ -1,5 +1,6 @@
 #pragma once
 #include<algorithm>
+#include<cmath>
 
 namespace myEC {
 	const int EMPTYVALUE = -2139062144;
@@ -22,7 +23,7 @@ namespace myEC {
 	//return a value between 0-1 but not be 0 or 1
 	double rand01_()
 	{
-		return double(rand() + 1) / (RAND_MAX + 2);
+		return double(rand() + 1) / (double(RAND_MAX) + 2);
 	}
 
 	double Eu_distance(double a[], double b[], size_t size = 2)

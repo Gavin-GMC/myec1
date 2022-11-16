@@ -204,7 +204,7 @@ namespace myEC {
 	class SA :public Optimizer
 	{
 	public:
-		static const enum class cooling_type { classic, quick };
+		enum class cooling_type { classic, quick };
 
 	protected:
 		double t0;

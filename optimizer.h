@@ -1,5 +1,6 @@
  #pragma once
-#include<time.h>
+#include<ctime>
+#include<cstring>
 #include<string>
 #include<algorithm>
 #include<fstream>

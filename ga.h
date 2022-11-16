@@ -279,7 +279,7 @@ namespace myEC {
 	class MOEAD :public GA
 	{
 	public:
-		static enum class D_approach { weight_sum, tchebycheff, PBI };
+		enum class D_approach { weight_sum, tchebycheff, PBI };
 
 	private:
 		D_approach D_type;

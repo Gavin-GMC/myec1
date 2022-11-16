@@ -5,9 +5,9 @@ namespace myEC {
 	class EAOperator
 	{
 	public:
-		static const enum class crossover { singlepoint, doublepoint, SBX, uniform };
-		static const enum class selection { roulette, championship };
-		static const enum class mutation { bit, exchange, overturn, PM, binary };
+		enum class crossover { singlepoint, doublepoint, SBX, uniform };
+		enum class selection { roulette, championship };
+		enum class mutation { bit, exchange, overturn, PM, binary };
 
 		static void singlepoint_crossover(Solution* id1, Solution* id2, double exparameter)
 		{

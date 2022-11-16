@@ -95,7 +95,7 @@ namespace myEC {
 	class EDA : public Optimizer
 	{
 	public:
-		static const enum class pda { gaussian, gaussian_PBILc };
+		enum class pda { gaussian, gaussian_PBILc };
 
 	protected:
 		Solution* offspring;

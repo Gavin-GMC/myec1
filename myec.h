@@ -12,7 +12,7 @@
 #include"gp.h"
 
 namespace myEC {
-	static const enum class algorithm { PSO, CSO, LLSO, GA, NSGA2, AS, ACS, EDA, SPSO, DE, TabuSearch, SA, BPSO, SBPSO, CLPSO, S_CLPSO, MOEAD};
+	enum class algorithm { PSO, CSO, LLSO, GA, NSGA2, AS, ACS, EDA, SPSO, DE, TabuSearch, SA, BPSO, SBPSO, CLPSO, S_CLPSO, MOEAD};
 
 	class OptimizerBuilder
 	{
